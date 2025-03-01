@@ -1,116 +1,81 @@
-// 載入題庫並隨機選取 5 題
-let questions = [];
-let currentQuestionIndex = 0;
-let selectedQuestions = [];
+document.addEventListener('DOMContentLoaded', function () {
+    const startQuizButton = document.getElementById('startQuiz');
+    const quizContainer = document.getElementById('quizContainer');
+    const questionNumber = document.getElementById('questionNumber');
+    const questionText = document.getElementById('questionText');
+    const options = document.getElementById('options');
+    const answerInput = document.getElementById('answerInput');
+    const submitAnswerButton = document.getElementById('submitAnswer');
+    const result = document.getElementById('result');
+    const explanation = document.getElementById('explanation');
 
-fetch('20.json', { mode: 'same-origin' }) // 確保同源模式，避免 CORS 問題
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let selectedQuestions = [];
+
+    if (startQuizButton) {
+        startQuizButton.addEventListener('click', function () {
+            window.location.href = 'quiz.html';
+        });
+    }
+
+    if (quizContainer) {
+        fetch('20.json')
+            .then(response => response.json())
+            .then(data => {
+                questions = data;
+                selectedQuestions = getRandomQuestions(questions, 5);
+                displayQuestion();
+            });
+
+        submitAnswerButton.addEventListener('click', function () {
+            const userAnswer = answerInput.value.trim();
+            const correctAnswer = selectedQuestions[currentQuestionIndex].答案.toString();
+
+            if (userAnswer === correctAnswer) {
+                result.innerHTML = '&#10004;'; // 藍色圓圈
+                result.style.color = 'blue';
+                setTimeout(nextQuestion, 1000);
+            } else {
+                result.innerHTML = '&#10008;'; // 紅色打叉
+                result.style.color = 'red';
+                explanation.innerHTML = `答案: ${correctAnswer}<br>解析: ${selectedQuestions[currentQuestionIndex].解析}`;
+                setTimeout(nextQuestion, 10000);
+            }
+        });
+    }
+
+    function getRandomQuestions(questions, count) {
+        const shuffled = questions.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+    }
+
+    function displayQuestion() {
+        const question = selectedQuestions[currentQuestionIndex];
+        questionNumber.textContent = `題號: ${question.題號}`;
+        questionText.textContent = question.題目;
+        options.innerHTML = `
+            <p>1. ${question.選項1}</p>
+            <p>2. ${question.選項2}</p>
+            <p>3. ${question.選項3}</p>
+            <p>4. ${question.選項4}</p>
+        `;
+        quizContainer.style.display = 'block';
+        answerInput.value = '';
+        result.innerHTML = '';
+        explanation.innerHTML = '';
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < selectedQuestions.length) {
+            displayQuestion();
+        } else {
+            result.innerHTML = 'OK';
+            result.style.color = 'green';
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log('題庫數據載入成功:', data);
-        if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('題庫格式錯誤或無效');
-        }
-        questions = data;
-        selectedQuestions = getRandomQuestions(questions, 5);
-        loadQuestion();
-    })
-    .catch(error => {
-        console.error('無法載入題庫:', error);
-        document.getElementById('question-container').innerHTML = `<p>無法載入題庫，請檢查檔案或聯繫管理員。錯誤細節：${error.message}</p>`;
-    });
-
-// 隨機選取指定數量的題目
-function getRandomQuestions(array, num) {
-    if (!Array.isArray(array) || array.length < num) {
-        console.error('題庫題目數量不足:', array);
-        return [];
     }
-    const shuffled = array.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, num);
-}
-
-// 載入當前題目
-function loadQuestion() {
-    if (currentQuestionIndex >= selectedQuestions.length) {
-        showCompletionScreen();
-        return;
-    }
-
-    const q = selectedQuestions[currentQuestionIndex];
-    if (!q || !q.題號 || !q.題目 || !q.選項1 || !q.選項2 || !q.選項3 || !q.選項4 || !q.答案) {
-        console.error('題目格式錯誤:', q);
-        document.getElementById('question-container').innerHTML = '<p>題目資料格式錯誤，請檢查題庫。</p>';
-        return;
-    }
-
-    document.getElementById('question-number').textContent = `題號: ${q.題號}`;
-    document.getElementById('question-text').textContent = q.題目;
-    document.getElementById('option1').textContent = q.選項1;
-    document.getElementById('option2').textContent = q.選項2;
-    document.getElementById('option3').textContent = q.選項3;
-    document.getElementById('option4').textContent = q.選項4;
-    document.getElementById('user-answer').value = '';
-    document.getElementById('result-icon').textContent = '';
-    document.getElementById('explanation').classList.add('hidden');
-}
-
-// 監聽答案輸入
-document.getElementById('user-answer').addEventListener('input', function() {
-    const userAnswer = parseInt(this.value);
-    const correctAnswer = selectedQuestions[currentQuestionIndex].答案;
-
-    if (isNaN(userAnswer) || userAnswer < 1 || userAnswer > 4) {
-        return; // 無效輸入，忽略
-    }
-
-    if (userAnswer === correctAnswer) {
-        document.getElementById('result-icon').textContent = '◯';
-        document.getElementById('result-icon').className = 'correct';
-        setTimeout(nextQuestion, 1000); // 1 秒後下一題
-    } else {
-        document.getElementById('result-icon').textContent = '✗';
-        document.getElementById('result-icon').className = 'incorrect';
-        showExplanation();
-        setTimeout(nextQuestion, 10000); // 10 秒後下一題
-    }
-    this.disabled = true; // 防止重複輸入
-});
-
-// 顯示解析
-function showExplanation() {
-    const q = selectedQuestions[currentQuestionIndex];
-    const explanationDiv = document.getElementById('explanation');
-    explanationDiv.innerHTML = `<strong>正確答案: ${q.答案}</strong><br>${q.解析}`;
-    explanationDiv.classList.remove('hidden');
-}
-
-// 下一題
-function nextQuestion() {
-    currentQuestionIndex++;
-    loadQuestion();
-}
-
-// 顯示完成畫面
-function showCompletionScreen() {
-    document.getElementById('question-container').innerHTML = '<h2>OK！測驗完成</h2>';
-    setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 3000); // 3 秒後返回首頁
-}
-
-// 中途未完成時返回首頁
-let inactivityTimeout = setTimeout(() => {
-    window.location.href = 'index.html';
-}, 30000); // 30 秒無操作返回首頁
-
-document.addEventListener('mousemove', () => {
-    clearTimeout(inactivityTimeout);
-    inactivityTimeout = setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 30000);
 });

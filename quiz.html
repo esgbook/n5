@@ -3,27 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESGBT - ESG 測驗</title>
+    <title>ESGBT - 測驗</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>ESG 測驗</h1>
-        <div id="question-container">
-            <p id="question-number"></p>
-            <p id="question-text"></p>
-            <ul id="options">
-                <li>1. <span id="option1"></span></li>
-                <li>2. <span id="option2"></span></li>
-                <li>3. <span id="option3"></span></li>
-                <li>4. <span id="option4"></span></li>
-            </ul>
-            <div id="answer-section">
-                <label for="user-answer">請輸入答案 (1-4)：</label>
-                <input type="number" id="user-answer" min="1" max="4" required>
-                <span id="result-icon"></span>
-            </div>
-            <div id="explanation" class="hidden"></div>
+        <div id="quizContainer">
+            <p id="questionNumber"></p>
+            <p id="questionText"></p>
+            <div id="options"></div>
+            <input type="text" id="answerInput" placeholder="輸入選項數字">
+            <button id="submitAnswer">提交答案</button>
+            <div id="result"></div>
+            <div id="explanation"></div>
         </div>
     </div>
     <script src="script.js"></script>

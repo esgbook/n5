@@ -4,16 +4,28 @@ let currentQuestionIndex = 0;
 let selectedQuestions = [];
 
 fetch('20.json')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         questions = data;
         selectedQuestions = getRandomQuestions(questions, 5);
         loadQuestion();
     })
-    .catch(error => console.error('無法載入題庫:', error));
+    .catch(error => {
+        console.error('無法載入題庫:', error);
+        document.getElementById('question-container').innerHTML = '<p>無法載入題庫，請檢查檔案或聯繫管理員。</p>';
+    });
 
 // 隨機選取指定數量的題目
 function getRandomQuestions(array, num) {
+    if (array.length < num) {
+        console.error('題庫題目數量不足');
+        return [];
+    }
     const shuffled = array.sort(() => 0.5 - Math.random());
     return shuffled.slice(0, num);
 }

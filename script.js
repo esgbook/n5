@@ -6,11 +6,12 @@ let selectedQuestions = [];
 fetch('20.json', { mode: 'same-origin' }) // 確保同源模式，避免 CORS 問題
     .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
+        console.log('題庫數據載入成功:', data);
         if (!Array.isArray(data) || data.length === 0) {
             throw new Error('題庫格式錯誤或無效');
         }
@@ -20,13 +21,13 @@ fetch('20.json', { mode: 'same-origin' }) // 確保同源模式，避免 CORS �
     })
     .catch(error => {
         console.error('無法載入題庫:', error);
-        document.getElementById('question-container').innerHTML = '<p>無法載入題庫，請檢查檔案或聯繫管理員。</p>';
+        document.getElementById('question-container').innerHTML = `<p>無法載入題庫，請檢查檔案或聯繫管理員。錯誤細節：${error.message}</p>`;
     });
 
 // 隨機選取指定數量的題目
 function getRandomQuestions(array, num) {
     if (!Array.isArray(array) || array.length < num) {
-        console.error('題庫題目數量不足');
+        console.error('題庫題目數量不足:', array);
         return [];
     }
     const shuffled = array.sort(() => 0.5 - Math.random());

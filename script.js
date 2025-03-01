@@ -3,7 +3,7 @@ let questions = [];
 let currentQuestionIndex = 0;
 let selectedQuestions = [];
 
-fetch('20.json')
+fetch('20.json', { mode: 'same-origin' }) // 確保同源模式，避免 CORS 問題
     .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -11,6 +11,9 @@ fetch('20.json')
         return response.json();
     })
     .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+            throw new Error('題庫格式錯誤或無效');
+        }
         questions = data;
         selectedQuestions = getRandomQuestions(questions, 5);
         loadQuestion();
@@ -22,7 +25,7 @@ fetch('20.json')
 
 // 隨機選取指定數量的題目
 function getRandomQuestions(array, num) {
-    if (array.length < num) {
+    if (!Array.isArray(array) || array.length < num) {
         console.error('題庫題目數量不足');
         return [];
     }
@@ -38,6 +41,12 @@ function loadQuestion() {
     }
 
     const q = selectedQuestions[currentQuestionIndex];
+    if (!q || !q.題號 || !q.題目 || !q.選項1 || !q.選項2 || !q.選項3 || !q.選項4 || !q.答案) {
+        console.error('題目格式錯誤:', q);
+        document.getElementById('question-container').innerHTML = '<p>題目資料格式錯誤，請檢查題庫。</p>';
+        return;
+    }
+
     document.getElementById('question-number').textContent = `題號: ${q.題號}`;
     document.getElementById('question-text').textContent = q.題目;
     document.getElementById('option1').textContent = q.選項1;
@@ -54,19 +63,21 @@ document.getElementById('user-answer').addEventListener('input', function() {
     const userAnswer = parseInt(this.value);
     const correctAnswer = selectedQuestions[currentQuestionIndex].答案;
 
-    if (userAnswer >= 1 && userAnswer <= 4) {
-        if (userAnswer === correctAnswer) {
-            document.getElementById('result-icon').textContent = '◯';
-            document.getElementById('result-icon').className = 'correct';
-            setTimeout(nextQuestion, 1000); // 1 秒後下一題
-        } else {
-            document.getElementById('result-icon').textContent = '✗';
-            document.getElementById('result-icon').className = 'incorrect';
-            showExplanation();
-            setTimeout(nextQuestion, 10000); // 10 秒後下一題
-        }
-        this.disabled = true; // 防止重複輸入
+    if (isNaN(userAnswer) || userAnswer < 1 || userAnswer > 4) {
+        return; // 無效輸入，忽略
     }
+
+    if (userAnswer === correctAnswer) {
+        document.getElementById('result-icon').textContent = '◯';
+        document.getElementById('result-icon').className = 'correct';
+        setTimeout(nextQuestion, 1000); // 1 秒後下一題
+    } else {
+        document.getElementById('result-icon').textContent = '✗';
+        document.getElementById('result-icon').className = 'incorrect';
+        showExplanation();
+        setTimeout(nextQuestion, 10000); // 10 秒後下一題
+    }
+    this.disabled = true; // 防止重複輸入
 });
 
 // 顯示解析

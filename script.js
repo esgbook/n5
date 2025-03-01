@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const startQuizButton = document.getElementById('startQuiz');
     const quizContainer = document.getElementById('quizContainer');
+    const questionCount = document.getElementById('questionCount'); // 新增
     const questionNumber = document.getElementById('questionNumber');
     const questionText = document.getElementById('questionText');
     const options = document.getElementById('options');
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function displayQuestion() {
         const question = selectedQuestions[currentQuestionIndex];
+        questionCount.textContent = `${currentQuestionIndex + 1}/5 題`; // 顯示當前題數
         questionNumber.textContent = `題號: ${question.題號}`;
         questionText.textContent = question.題目;
         options.innerHTML = `

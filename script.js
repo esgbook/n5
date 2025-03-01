@@ -1,108 +1,92 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const csvUrl = "bookex.csv"; // 假設 CSV 檔案在根目錄
-    let questions = [];
-    let selectedQuestions = [];
-    let currentQuestionIndex = 0;
+// 載入題庫並隨機選取 5 題
+let questions = [];
+let currentQuestionIndex = 0;
+let selectedQuestions = [];
 
-    // 解析 CSV 檔案
-    fetch(csvUrl)
-        .then(response => response.text())
-        .then(data => {
-            questions = parseCSV(data);
-            startQuiz();
-        })
-        .catch(error => console.error("載入題庫失敗:", error));
+fetch('20.json')
+    .then(response => response.json())
+    .then(data => {
+        questions = data;
+        selectedQuestions = getRandomQuestions(questions, 5);
+        loadQuestion();
+    })
+    .catch(error => console.error('無法載入題庫:', error));
 
-    function parseCSV(data) {
-        const rows = data.trim().split("\n").slice(1); // 移除標題行
-        return rows.map(row => {
-            const [answer, number, question, opt1, opt2, opt3, opt4, explanation] = row.split(",");
-            return {
-                answer: parseInt(answer),
-                number,
-                question,
-                options: [opt1, opt2, opt3, opt4],
-                explanation
-            };
-        });
+// 隨機選取指定數量的題目
+function getRandomQuestions(array, num) {
+    const shuffled = array.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, num);
+}
+
+// 載入當前題目
+function loadQuestion() {
+    if (currentQuestionIndex >= selectedQuestions.length) {
+        showCompletionScreen();
+        return;
     }
 
-    function startQuiz() {
-        // 隨機選 5 題
-        selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, 5);
-        showQuestion();
-    }
+    const q = selectedQuestions[currentQuestionIndex];
+    document.getElementById('question-number').textContent = `題號: ${q.題號}`;
+    document.getElementById('question-text').textContent = q.題目;
+    document.getElementById('option1').textContent = q.選項1;
+    document.getElementById('option2').textContent = q.選項2;
+    document.getElementById('option3').textContent = q.選項3;
+    document.getElementById('option4').textContent = q.選項4;
+    document.getElementById('user-answer').value = '';
+    document.getElementById('result-icon').textContent = '';
+    document.getElementById('explanation').classList.add('hidden');
+}
 
-    function showQuestion() {
-        if (currentQuestionIndex >= selectedQuestions.length) {
-            showCompletion();
-            return;
+// 監聽答案輸入
+document.getElementById('user-answer').addEventListener('input', function() {
+    const userAnswer = parseInt(this.value);
+    const correctAnswer = selectedQuestions[currentQuestionIndex].答案;
+
+    if (userAnswer >= 1 && userAnswer <= 4) {
+        if (userAnswer === correctAnswer) {
+            document.getElementById('result-icon').textContent = '◯';
+            document.getElementById('result-icon').className = 'correct';
+            setTimeout(nextQuestion, 1000); // 1 秒後下一題
+        } else {
+            document.getElementById('result-icon').textContent = '✗';
+            document.getElementById('result-icon').className = 'incorrect';
+            showExplanation();
+            setTimeout(nextQuestion, 10000); // 10 秒後下一題
         }
-
-        const q = selectedQuestions[currentQuestionIndex];
-        document.getElementById("question-number").textContent = `題號: ${q.number}`;
-        document.getElementById("question-text").textContent = q.question;
-        
-        const optionsList = document.getElementById("options");
-        optionsList.innerHTML = "";
-        q.options.forEach((opt, idx) => {
-            const li = document.createElement("li");
-            li.textContent = `${idx + 1}. ${opt}`;
-            optionsList.appendChild(li);
-        });
-
-        const answerInput = document.getElementById("user-answer");
-        const resultSpan = document.getElementById("result");
-        const explanationDiv = document.getElementById("explanation");
-        answerInput.value = "";
-        resultSpan.textContent = "";
-        explanationDiv.style.display = "none";
-
-        answerInput.focus();
-        answerInput.oninput = () => checkAnswer(q, answerInput.value);
+        this.disabled = true; // 防止重複輸入
     }
+});
 
-    function checkAnswer(question, userAnswer) {
-        const resultSpan = document.getElementById("result");
-        const explanationDiv = document.getElementById("explanation");
-        const userAns = parseInt(userAnswer);
+// 顯示解析
+function showExplanation() {
+    const q = selectedQuestions[currentQuestionIndex];
+    const explanationDiv = document.getElementById('explanation');
+    explanationDiv.innerHTML = `<strong>正確答案: ${q.答案}</strong><br>${q.解析}`;
+    explanationDiv.classList.remove('hidden');
+}
 
-        if (userAns >= 1 && userAns <= 4) {
-            if (userAns === question.answer) {
-                resultSpan.className = "correct";
-                setTimeout(() => {
-                    currentQuestionIndex++;
-                    showQuestion();
-                }, 1000); // 1秒後下一題
-            } else {
-                resultSpan.className = "wrong";
-                explanationDiv.textContent = `答案: ${question.answer} - ${question.explanation}`;
-                explanationDiv.style.display = "block";
-                setTimeout(() => {
-                    currentQuestionIndex++;
-                    showQuestion();
-                }, 10000); // 10秒後下一題
-            }
-        }
-    }
+// 下一題
+function nextQuestion() {
+    currentQuestionIndex++;
+    loadQuestion();
+}
 
-    function showCompletion() {
-        const container = document.getElementById("question-container");
-        container.innerHTML = "<h2>OK</h2><p>測驗完成！</p>";
-        setTimeout(() => {
-            window.location.href = "index.html";
-        }, 3000); // 3秒後返回首頁
-    }
+// 顯示完成畫面
+function showCompletionScreen() {
+    document.getElementById('question-container').innerHTML = '<h2>OK！測驗完成</h2>';
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 3000); // 3 秒後返回首頁
+}
 
-    // 中途未完成時返回首頁（假設 60 秒無操作）
-    let timeout = setTimeout(() => {
-        window.location.href = "index.html";
-    }, 60000);
+// 中途未完成時返回首頁
+let inactivityTimeout = setTimeout(() => {
+    window.location.href = 'index.html';
+}, 30000); // 30 秒無操作返回首頁
 
-    document.addEventListener("mousemove", () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            window.location.href = "index.html";
-        }, 60000);
-    });
+document.addEventListener('mousemove', () => {
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 30000);
 });
